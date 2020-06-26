@@ -34,7 +34,16 @@ group of cancer clinical trials.
 enhanced with synthetic data and translated into machine-readable code.
 3. Participant records matched against clinical trials for which the eligibility criteria and
 participant data were previously translated into machine-readable code.
-A second version of the third dataset, produced by oncology professionals, serves as a
-comparison dataset for the matches identified through the application of AI.
-For more information on the above datasets and potential approaches on usage, please see
-https://digital.gov/2019/02/27/how-a-health-tech-sprint-inspired-an-ai-ecosystem/. 
+
+A second version of the third dataset, produced by oncology professionals, serves as a comparison dataset for the matches identified through the application of AI.
+For more information on the above datasets and potential approaches on usage, please see https://digital.gov/2019/02/27/how-a-health-tech-sprint-inspired-an-ai-ecosystem/.
+In addition to the datasets provided, participants are encouraged to use other publicly available datasets. For example, National Cancer Institute (NCI)-funded cancer clinical trials, including API with annotations on disease eligibility criteria for all trials, is available at https://clinicaltrialsapi.cancer.gov
+
+Challenge Questions
+Challenge questions are listed below. However, participants are encouraged to suggest and tackle challenge questions different from those listed below. Innovative use of the provided data is strongly encouraged.
+1. Data representation
+• Develop novel big data structures to represent the clinical trials and the patient data that accommodate the interaction of the three datasets. The ultimate goal is to support thousands of clinical trials being matched with millions of people.
+2. Algorithm development
+• Develop novel algorithms for finding the most suitable matches between patients and clinical trials.
+3. Visualization/human computer interaction
+• Develop visualization and/or human-computer interaction solutions to enable medical providers to effectively leverage the data for clinical decision support.
