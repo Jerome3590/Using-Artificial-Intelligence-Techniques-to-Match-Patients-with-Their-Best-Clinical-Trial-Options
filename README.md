@@ -42,8 +42,8 @@ In addition to the datasets provided, participants are encouraged to use other p
 Challenge Questions
 Challenge questions are listed below. However, participants are encouraged to suggest and tackle challenge questions different from those listed below. Innovative use of the provided data is strongly encouraged.
 1. Data representation
-  • Develop novel big data structures to represent the clinical trials and the patient data that accommodate the interaction of the three datasets. The ultimate goal is to support thousands of clinical trials being matched with millions of people.
+  * Develop novel big data structures to represent the clinical trials and the patient data that accommodate the interaction of the three datasets. The ultimate goal is to support thousands of clinical trials being matched with millions of people.
 2. Algorithm development
-  • Develop novel algorithms for finding the most suitable matches between patients and clinical trials.
+  * Develop novel algorithms for finding the most suitable matches between patients and clinical trials.
 3. Visualization/human computer interaction
-  • Develop visualization and/or human-computer interaction solutions to enable medical providers to effectively leverage the data for clinical decision support.
+  * Develop visualization and/or human-computer interaction solutions to enable medical providers to effectively leverage the data for clinical decision support.
