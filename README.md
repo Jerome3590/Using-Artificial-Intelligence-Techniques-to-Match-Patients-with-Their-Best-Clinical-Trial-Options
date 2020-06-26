@@ -54,6 +54,6 @@ Initial Plan of Attack.
 3. Develop initial system dynamics causal model for what may be driving a successful clinical trial.
 4. From statistical analysis and initial system dynamics model - develop any grouping features and/or initial network architecture.
 5. Use CatBoost to determine clinical feature importance.
-6. Implement intial feed forward deep learning network based on catboost, initial statistical analysis, and system dynamics causal diagram.
+6. Implement intial feed forward deep learning network based on CatBoost, initial statistical analysis, and system dynamics causal diagram.
 7. Produce final ensemble model with catboost and feed forward deep learning network.
 8. Report results.
