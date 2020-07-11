@@ -62,7 +62,7 @@ HB (Hemoglobin levels)  \
 Platelet (Platelet Count)  \
 WBC (White Blood Count)   \
 ECOG Performance Status (Eastern Cooperative Oncology Group PS)   \
-Synthetic Zip Code    \
+Synthetic Zip Code    
 
 Join Variables:
 NCI Study Title
