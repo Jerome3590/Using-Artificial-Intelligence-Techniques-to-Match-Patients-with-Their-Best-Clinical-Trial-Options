@@ -70,10 +70,10 @@ NCI Study Title
 Feature Engineered Variables using Natural Language Processing (NLP):   \
 PubMed Query for Cancer Site -> Titles   \
 PubMed Query for NCI Study -> Abstract   \
-Compare Text Similarity from Cancer Site PubMed 'Titles' to NCI Study 'Abstract'   \
+Compare Text Similarity from Cancer Site PubMed 'Titles' to NCI Study 'Abstract'   
 
 Target variables:    \
-Specific treatment/trial/type: Selected: Yes or No    \
+Specific treatment/trial/type: Selected: Yes or No    
 
 ## Step 2:
 Develop Deep Learning Neural Network Classification Model
