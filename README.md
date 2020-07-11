@@ -79,7 +79,7 @@ NCI Study Title
 Feature Engineer Variables using Natural Language Processing (NLP):   \
 PubMed Query for Cancer Site -> Abstracts   \
 PubMed Query for NCI Study -> Abstract   \
-PyTextRank for Abstracts   \
+PyTextRank for Abstract Key Words  \
 Compare Text Similarity from Cancer Site PubMed 'Abstracts' to NCI Study 'Abstract'   
 Target variables:    \
 Specific treatment/trial/type: Selected: Yes or No   
