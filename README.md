@@ -86,7 +86,7 @@ Compare Text Similarity from Cancer Site PubMed 'Abstracts' Key Words to NCI Stu
 
 ![Updated Patient Matching Mental Model](https://github.com/Jerome3590/Using-Artificial-Intelligence-Techniques-to-Match-Patients-with-Their-Best-Clinical-Trial-Options/blob/master/Slide4.PNG?raw=true)
 
-Feature Engineered Variables using Natural Language Processing (NLP):   \
+Feature Engineer Variables using Natural Language Processing (NLP):   \
 PubMed Query for Cancer Site -> Abstracts   \
 PubMed Query for NCI Study -> Abstract   \
 PyTextRank for Abstracts   \
