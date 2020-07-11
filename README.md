@@ -50,7 +50,7 @@ Challenge questions are listed below. However, participants are encouraged to su
     
 ## Step 1:
 Business Understanding/Model Development
-## Initial Dataset \
+## Initial Dataset 
 Input variables: \
 Cancer Site   \
 Stage   \
@@ -83,7 +83,7 @@ Specific treatment/trial/type: Selected: Yes or No
 
 
 ## Step 3: Add additional features with PyTextRank and PubMed
-## Feature Engineered Variables using Natural Language Processing (NLP):   \
+## Feature Engineered Variables using Natural Language Processing (NLP): 
 PubMed Query for Cancer Site -> Abstracts   \
 PubMed Query for NCI Study -> Abstract   \
 PyTextRank for Abstracts   \
