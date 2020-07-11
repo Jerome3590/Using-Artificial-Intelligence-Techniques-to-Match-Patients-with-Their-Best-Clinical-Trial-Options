@@ -48,7 +48,7 @@ Challenge questions are listed below. However, participants are encouraged to su
 3. Visualization/human computer interaction
     * Develop visualization and/or human-computer interaction solutions to enable medical providers to effectively leverage the data for clinical decision support.
     
-#Step 1:
+## Step 1:
 Business Understanding/Model Development
 
 Input variables:
@@ -75,7 +75,7 @@ Compare Text Similarity from Cancer Site PubMed 'Titles' to NCI Study 'Abstract'
 Target variables:
 Specific treatment/trial/type: Selected: Yes or No
 
-#Step 2:
+## Step 2:
 Develop Deep Learning Neural Network Classification Model
 
 
