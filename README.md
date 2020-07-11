@@ -72,7 +72,7 @@ NCI Study Title
 ## Step 2: Mental Model / Causal Analysis
 ![Patient Matching to Clinical Trial Mental Model](https://github.com/Jerome3590/Using-Artificial-Intelligence-Techniques-to-Match-Patients-with-Their-Best-Clinical-Trial-Options/blob/master/Slide2.PNG?raw=true)
 
-## Step 3: Add additional features with PyTextRank and PubMed
+## Step 3: Add additional features with PubMed, NCI API, and PyTextRank
 ![Model Understanding and Development](https://github.com/Jerome3590/Using-Artificial-Intelligence-Techniques-to-Match-Patients-with-Their-Best-Clinical-Trial-Options/blob/master/Slide3.PNG?raw=true)
 ![Updated Patient Matching Mental Model](https://github.com/Jerome3590/Using-Artificial-Intelligence-Techniques-to-Match-Patients-with-Their-Best-Clinical-Trial-Options/blob/master/Slide4.PNG?raw=true)
 
