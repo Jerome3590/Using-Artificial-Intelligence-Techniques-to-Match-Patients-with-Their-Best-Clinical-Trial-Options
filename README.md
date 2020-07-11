@@ -44,13 +44,13 @@ Challenge questions are listed below. However, participants are encouraged to su
 1. Data representation
     * Develop novel big data structures to represent the clinical trials and the patient data that accommodate the interaction of the three datasets. The ultimate goal is to support thousands of clinical trials being matched with millions of people.
 2. Algorithm development
-    * Develop novel algorithms for finding the most suitable matches between patients and clinical trials.
+#    * Develop novel algorithms for finding the most suitable matches between patients and clinical trials.
 3. Visualization/human computer interaction
     * Develop visualization and/or human-computer interaction solutions to enable medical providers to effectively leverage the data for clinical decision support.
     
 ## Step 1:
 Business Understanding/Model Development
-
+## Initial Dataset \
 Input variables: \
 Cancer Site   \
 Stage   \
@@ -68,14 +68,39 @@ Join Variables:
 NCI Study Title
 
 Feature Engineered Variables using Natural Language Processing (NLP):   \
-PubMed Query for Cancer Site -> Titles   \
+PubMed Query for Cancer Site -> Abstracts   \
 PubMed Query for NCI Study -> Abstract   \
-Compare Text Similarity from Cancer Site PubMed 'Titles' to NCI Study 'Abstract'   
+PyTextRank for Abstracts   \
+Compare Text Similarity from Cancer Site PubMed 'Abstracts' to NCI Study 'Abstract'   
 
 Target variables:    \
 Specific treatment/trial/type: Selected: Yes or No    
 
-## Step 2:
+
+## Step 2: Mental Model / Causal Analysis
+
+
+
+
+## Step 3: Add additional features with PyTextRank and PubMed
+## Feature Engineered Variables using Natural Language Processing (NLP):   \
+PubMed Query for Cancer Site -> Abstracts   \
+PubMed Query for NCI Study -> Abstract   \
+PyTextRank for Abstracts   \
+Compare Text Similarity from Cancer Site PubMed 'Abstracts' to NCI Study 'Abstract'   
+
+
+
+
+
+
+## Step 4: Build Deep Learning Classification Model
+
+
+
+
+
+## Step 5: Analyze Results
 Develop Deep Learning Neural Network Classification Model
 
 
