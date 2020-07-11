@@ -51,11 +51,11 @@ Challenge questions are listed below. However, participants are encouraged to su
 ## Step 1:
 Business Understanding/Model Development
 
-Input variables:
-Cancer Site
-Stage
-Biomarker
-Treatment History
+Input variables: \
+Cancer Site   \
+Stage   \
+Biomarker   \
+Treatment History  \
 Gender
 AGE
 HB (Hemoglobin levels)
