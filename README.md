@@ -48,19 +48,7 @@ Challenge questions are listed below. However, participants are encouraged to su
 3. Visualization/human computer interaction
     * Develop visualization and/or human-computer interaction solutions to enable medical providers to effectively leverage the data for clinical decision support.
     
-Initial Plan of Attack.
-1. Data Understanding and Discovery. Input data is categorical for patient features. Target variable is binary classification - in or out of clinical trial.
-2. Perform initial statistical analysis.
-3. Develop initial system dynamics causal model for what may be driving a successful clinical trial.
-4. From statistical analysis and initial system dynamics model - develop any grouping features and/or initial network architecture.
-5. Use CatBoost to determine clinical feature importance.
-6. Implement intial feed forward deep learning network based on CatBoost Feature Importance, initial statistical analysis, and system dynamics causal diagram.
-7. Produce final ensemble model with CatBoost and feed forward deep learning network.
-8. Report results.
-
-
-
-Step 1:
+#Step 1:
 Business Understanding/Model Development
 
 Input variables:
@@ -87,7 +75,7 @@ Compare Text Similarity from Cancer Site PubMed 'Titles' to NCI Study 'Abstract'
 Target variables:
 Specific treatment/trial/type: Selected: Yes or No
 
-Step 2:
+#Step 2:
 Develop Deep Learning Neural Network Classification Model
 
 
