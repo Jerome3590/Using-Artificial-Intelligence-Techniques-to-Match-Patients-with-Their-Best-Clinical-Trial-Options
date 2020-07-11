@@ -69,15 +69,6 @@ NCI Study Title
 
 ![Initial Dataset](https://github.com/Jerome3590/Using-Artificial-Intelligence-Techniques-to-Match-Patients-with-Their-Best-Clinical-Trial-Options/blob/master/Slide1.PNG?raw=true)
 
-Feature Engineered Variables using Natural Language Processing (NLP):   \
-PubMed Query for Cancer Site -> Abstracts   \
-PubMed Query for NCI Study -> Abstract   \
-PyTextRank for Abstracts   \
-Compare Text Similarity from Cancer Site PubMed 'Abstracts' to NCI Study 'Abstract'   
-
-Target variables:    \
-Specific treatment/trial/type: Selected: Yes or No    
-
 
 ## Step 2: Mental Model / Causal Analysis
 ![Patient Matching to Clinical Trial Mental Model](https://github.com/Jerome3590/Using-Artificial-Intelligence-Techniques-to-Match-Patients-with-Their-Best-Clinical-Trial-Options/blob/master/Slide2.PNG?raw=true)
@@ -94,6 +85,15 @@ Compare Text Similarity from Cancer Site PubMed 'Abstracts' Key Words to NCI Stu
 ![Model Understanding and Development](https://github.com/Jerome3590/Using-Artificial-Intelligence-Techniques-to-Match-Patients-with-Their-Best-Clinical-Trial-Options/blob/master/Slide3.PNG?raw=true)
 
 ![Updated Patient Matching Mental Model](https://github.com/Jerome3590/Using-Artificial-Intelligence-Techniques-to-Match-Patients-with-Their-Best-Clinical-Trial-Options/blob/master/Slide4.PNG?raw=true)
+
+Feature Engineered Variables using Natural Language Processing (NLP):   \
+PubMed Query for Cancer Site -> Abstracts   \
+PubMed Query for NCI Study -> Abstract   \
+PyTextRank for Abstracts   \
+Compare Text Similarity from Cancer Site PubMed 'Abstracts' to NCI Study 'Abstract'   
+
+Target variables:    \
+Specific treatment/trial/type: Selected: Yes or No    
 
 ![Final Dataframe for Deep Learning Neural Network Classification Model](https://github.com/Jerome3590/Using-Artificial-Intelligence-Techniques-to-Match-Patients-with-Their-Best-Clinical-Trial-Options/blob/master/Slide5.PNG?raw=true)
 
