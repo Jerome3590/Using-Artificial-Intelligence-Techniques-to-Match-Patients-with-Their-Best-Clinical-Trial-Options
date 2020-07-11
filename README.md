@@ -57,3 +57,38 @@ Initial Plan of Attack.
 6. Implement intial feed forward deep learning network based on CatBoost Feature Importance, initial statistical analysis, and system dynamics causal diagram.
 7. Produce final ensemble model with CatBoost and feed forward deep learning network.
 8. Report results.
+
+
+
+Step 1:
+Business Understanding/Model Development
+
+Input variables:
+Cancer Site
+Stage
+Biomarker
+Treatment History
+Gender
+AGE
+HB (Hemoglobin levels)
+Platelet (Platelet Count)
+WBC (White Blood Count)
+ECOG Performance Status (Eastern Cooperative Oncology Group PS)
+Synthetic Zip Code
+
+Join Variables:
+NCI Study Title
+
+Feature Engineered Variables using Natural Language Processing (NLP):
+PubMed Query for Cancer Site -> Titles
+PubMed Query for NCI Study -> Abstract
+Compare Text Similarity from Cancer Site PubMed 'Titles' to NCI Study 'Abstract'
+
+Target variables:
+Specific treatment/trial/type: Selected: Yes or No
+
+Step 2:
+Develop Deep Learning Neural Network Classification Model
+
+
+
