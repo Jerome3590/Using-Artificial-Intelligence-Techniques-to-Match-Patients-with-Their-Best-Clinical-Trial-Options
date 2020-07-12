@@ -1,0 +1,189 @@
+---
+title: "ORNL Data Challenge"
+author: "Jerome Dixon"
+date: "7/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+
+library(reticulate)
+use_condaenv("ORNL")
+
+```
+
+
+```{r}
+
+library(here)
+library(readxl)
+library(httr)
+library(jsonlite)
+library(dplyr)
+library(magrittr)
+library(aws.s3)
+library(tidyverse)
+library(easyPubMed)
+library(kableExtra)
+library(purrr)
+library(data.table)
+library(rlist)
+
+
+```
+
+
+```{r AWS ORNL Data Files}
+
+aws_bucket <- "s3://ornl-data-challenge/"
+
+bucket_df <- get_bucket_df(aws_bucket, check_region = F)
+
+bucket_df$Key
+
+#Download AWS files to your local directory
+
+```
+
+
+```{r Local ORNL Data Files}
+
+#Sample Participants
+participants_marked <- read_excel(here("data","participants_data", "Dataset2_Sample_Participant_Data_With_Syn_Columns_Marked.xlsx"))
+
+#Eligibility Criteria
+files_e <- list.files(path = here("data","eligibility_criteria"), pattern = "*.xlsx", full.names = T)
+
+eligibility_rules <- sapply(files_e, read_excel, simplify=FALSE) %>% 
+bind_rows(.id = "id")
+
+#Clinician Matches
+files_c <- list.files(path = here("data","clinician_matches"), pattern = "*.xlsx", full.names = T)
+
+clinician_matches <- sapply(files_c, read_excel, simplify=FALSE) %>% 
+bind_rows(.id = "id")
+
+
+```
+
+
+
+```{r Clinical Trial Data From NCI API}
+
+base_url <- "https://clinicaltrialsapi.cancer.gov/v1/clinical-trials?anatomic_sites"
+
+cancer_sites <- read_csv("data/cancer-sites.csv")
+
+cancer_sites$URL <- paste0(base_url,'=',cancer_sites$`Cancer Sites`,sep="")
+
+URL <- as.data.frame(cancer_sites$URL)
+names(URL) <- "URL"
+
+clinical_trials_list <- map(URL$URL, ~{
+
+  Sys.sleep(sample(seq(0.5, 2.5, 0.5), 1)) 
+
+  res <- httr::GET(.x)
+
+  content(res, as="text", encoding="UTF-8") %>% 
+    fromJSON(flatten=TRUE) %>% 
+    as_tibble() 
+
+})
+
+
+```
+
+
+```{r NLP Files for Processing }
+
+#Create 'nlp' folder to store files under existing 'data' folder
+
+names(clinical_trials_list) <- c(1:25)
+
+for(i in seq_along(clinical_trials_list)) {
+   dom <- clinical_trials_list[[i]][["trials"]] %>% 
+      select(c(1:2,18:19,22:23,39))
+
+    dom_nlp <- as.data.frame(dom) %>% 
+      unnest(c(7))
+
+    write.csv(dom_nlp, paste0("data/nlp/", names(clinical_trials_list)[i],".csv"))
+}
+
+
+```
+
+
+
+```{r}
+
+
+
+
+
+```
+
+
+
+
+
+
+```{python}
+
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics.pairwise import euclidean_distances
+
+
+corpus = ['Compatibility', 'of', 'systems', 'of', 'linear', 'constraints', 'over', 'the', 'set', 'of', 'natural numbers','Criteria of compatibility of a system of linear Diophantine equations, strict inequations, and nonstrict inequations are considered. Upper bounds for components of a minimal set of solutions and algorithms of', 'compatibilitz', 'construction of minimal generating sets of solutions for all types of systems are given. These criteria and the corresponding algorithms for constructing a minimal supporting set of solutions can be used in solving all the considered types' ,'systems', 'and', 'systems of mixed types.']
+
+
+vectorizer = CountVectorizer()
+features = vectorizer.fit_transform(corpus).todense()
+
+for f in features:
+    print(euclidean_distances(features[0],f) )
+
+
+```
+
+
+
+```{python}
+
+
+import spacy
+import pytextrank
+
+# load spaCy model
+nlp = spacy.load("en_core_web_sm")
+
+# add PyTextRank to the spaCy pipeline
+tr = pytextrank.TextRank()
+nlp.add_pipe(tr.PipelineComponent, name="textrank", last=True)
+
+text= ""
+
+doc = nlp(text)
+
+# examine the top-ranked phrases in the document
+for p in doc._.phrases:
+    print("{:.4f} {:5d}  {}".format(p.rank, p.count, p.text))
+    print(p.chunks)
+
+
+
+```
+
+
+
+
+
+
+
+
