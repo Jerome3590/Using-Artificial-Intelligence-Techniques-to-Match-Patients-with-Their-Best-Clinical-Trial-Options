@@ -7,23 +7,26 @@ import matplotlib.pyplot as plt
 import operator
 
 nlp = spacy.load("en_core_web_sm")
-df = pandas.read_csv('data//nlp//1.csv', encoding='windows-1252')
+df = pandas.read_csv('D://ORNL//data//nlp//1.csv', encoding='windows-1252')
 text1 = df.detail_description.T[[0]]
 doc_to_process = text1.to_string()
 
 POS_KEPT = ["ADJ", "NOUN", "PROPN", "VERB"]
 
 
-def increment_edge(doc, graph, node0, node1):
-    print("link {} {}".format(node0, node1))
+def draw_network_graph(doc, sent):
+    lemma_graph = nx.Graph()
+    seen_lemma = {}
 
-    if graph.has_edge(node0, node1):
-        graph[node0][node1]["weight"] += 1.0
-    else:
-        graph.add_edge(node0, node1, weight=1.0)
+    for sent in doc.sents:
+        link_sentence(doc, sent, lemma_graph, seen_lemma)
 
+    labels = {}
+    keys = list(seen_lemma.keys())
 
-def link_sentence(doc, sent, lemma_graph, seen_lemma):
+    for i in range(len(seen_lemma)):
+        labels[i] = keys[i][0].lower()
+
     visited_tokens = []
     visited_nodes = []
 
@@ -60,27 +63,13 @@ def link_sentence(doc, sent, lemma_graph, seen_lemma):
             visited_tokens.append(token.i)
             visited_nodes.append(node_id)
 
+            view_graph(lemma_graph, labels)
 
-def make_lemma_graph(doc):
-    lemma_graph = nx.Graph()
-    seen_lemma = {}
-
-    for sent in doc.sents:
-        link_sentence(doc, sent, lemma_graph, seen_lemma)
-
-    labels = {}
-    keys = list(seen_lemma.keys())
-
-    for i in range(len(seen_lemma)):
-        labels[i] = keys[i][0].lower()
-
-    draw_graph(lemma_graph, labels)
-
-    ranks = nx.pagerank(lemma_graph)
-    return ranks
+            ranks = nx.pagerank(lemma_graph)
+            return ranks
 
 
-def draw_graph(lemma_graph, labels):
+def view_graph(lemma_graph, labels):
     fig = plt.figure(figsize=(9, 9))
     pos = nx.spring_layout(lemma_graph)
 
@@ -166,19 +155,17 @@ def lemma_combos(phrases, counts, ranks, labels, doc):
         print(phrase, count, rank)
 
     for node_id, rank in sorted(ranks.items(), key=lambda x: x[1], reverse=True):
-        
         keywords = labels[node_id], rank
         return keywords
 
 
 def run_nlp(doc_to_process):
     doc = nlp(doc_to_process)
-    increment_edge(doc, nx.graph, nx.node0, nx.node1)
     link_sentence(doc, sent, lemma_graph, seen_lemma)
-    make_lemma_graph()
-    draw_graph()
+    draw_network_graph()
     calculate_word_rank()
     collect_phrases()
     lemma_combos()
+
 
 run_nlp(doc_to_process)
