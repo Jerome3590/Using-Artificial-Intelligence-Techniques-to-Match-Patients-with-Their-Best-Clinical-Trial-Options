@@ -71,7 +71,7 @@ bind_rows(.id = "id")
 
 
 
-```{r Clinical Trial Data From NCI API}
+```{r Clinical Trials Data From NCI API}
 
 base_url <- "https://clinicaltrialsapi.cancer.gov/v1/clinical-trials?anatomic_sites"
 
@@ -100,7 +100,7 @@ clinical_trials_list <- map(URL$URL, ~{
 
 ```{r NLP Files for Processing }
 
-#Create 'nlp' folder to store files under existing 'data' folder
+#Create 'nlp_in' folder to store files under existing 'data' folder
 
 names(clinical_trials_list) <- c(1:25)
 
@@ -119,71 +119,7 @@ for(i in seq_along(clinical_trials_list)) {
 
 
 
-```{python NLP Processor Stage I}
-
-import pytextrank
-import spacy
-from math import sqrt
-import pandas as pd
-
-
-nlp = spacy.load("en_core_web_sm")
-
-tr = pytextrank.TextRank()
-nlp.add_pipe(tr.PipelineComponent, name="textrank", last=True)
-
-
-def listToString(s):
-    str1 = ""
-    for ele in s:
-        str1 += ele
-
-    return str1
-
-
-def run_nlp(doc):
-    doc = nlp(doc)
-    with open('data//nlp_out//output.txt', 'w') as out_file:
-        for p in doc._.phrases:
-           print("{:.4f} {:5d}  {}".format(p.rank, p.count, p.text))
-           out_file.write("{:.4f} {:5d}  {}".format(p.rank, p.count, p.text))
-
-
-df_1 = pd.read_csv('data//nlp//*.csv', encoding='windows-1252')
-doc1 = df_1.brief_summary.T
-docs1 = listToString(doc1)
-
-run_nlp(docs1)
-
-
-```
-
-
-
-```{python NLP Processor Stage II}
-
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics.pairwise import euclidean_distances
-
-
-corpus = ['Compatibility', 'of', 'systems', 'of', 'linear', 'constraints', 'over', 'the', 'set', 'of', 'natural numbers','Criteria of compatibility of a system of linear Diophantine equations, strict inequations, and nonstrict inequations are considered. Upper bounds for components of a minimal set of solutions and algorithms of', 'compatibilitz', 'construction of minimal generating sets of solutions for all types of systems are given. These criteria and the corresponding algorithms for constructing a minimal supporting set of solutions can be used in solving all the considered types' ,'systems', 'and', 'systems of mixed types.']
-
-def run_nlp2(corpus):
-    vectorizer = CountVectorizer()
-    features = vectorizer.fit_transform(corpus).todense()
-    with open('data//nlp_out//stage2_output.txt', 'w') as out_file:
-        for f in features:
-             print(euclidean_distances(features[0],f) )
-             out_file.write(euclidean_distances(features[0],f)
-
-run_nlp2(corpus)
-
-
-```
-
-
-
-```{python}
+```{python NLP Processor Stage I All Files}
 
 import pytextrank
 import spacy
@@ -191,7 +127,7 @@ from math import sqrt
 import pandas as pd
 import glob
 
-path = "data//nlp_out/*.csv"
+path = "data//nlp/*.csv"
 
 nlp = spacy.load("en_core_web_sm")
 
@@ -208,25 +144,45 @@ def listToString(s):
 
 
 def run_nlp(doc,fname):
-    doc = nlp(doc)
-    with open('data//nlp_out//output' + fname + '.txt', 'w') as out_file:
+    doc = nlp(doc,fname)
+    with open('data//nlp_out//NLP_output.txt', 'w') as out_file:
         for p in doc._.phrases:
-           print("{:.4f} {:5d}  {}".format(p.rank, p.count, p.text))
-           out_file.write("{:.4f} {:5d}  {}".format(p.rank, p.count, p.text))
+           print("{:.4f} {:5d} {} {} ".format(p.rank, p.count, p.text, fname))
+           out_file.write("{:.4f} {:5d} {} {} ".format(p.rank, p.count, p.text, fname))
 
 
 for fname in glob.iglob(path):
     df_1 = pd.read_csv(fname, encoding='windows-1252')
     doc1 = df_1.brief_summary.T
     docs1 = listToString(doc1)
-    run_nlp(docs1)
+    run_nlp(docs1,fname)
 
 
 ```
 
 
 
+```{python NLP Text Similarity Processor Stage II}
 
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics.pairwise import euclidean_distances
+import numpy as np
+
+
+corpus = ['Compatibility', 'of', 'systems', 'of', 'linear', 'constraints']
+
+def run_nlp2(corpus):
+    vectorizer = CountVectorizer()
+    features = vectorizer.fit_transform(corpus).todense()
+    with open('data//nlp_out//stage2_output.txt', 'w') as out_file:
+        for f in features:
+             print(euclidean_distances(features[0],f) )
+             distance_euclidean = euclidean_distances(features[0],f)
+             ts = np.array_str(distance_euclidean)
+             out_file.write(ts)
+
+run_nlp2(corpus)
+```
 
 
 
