@@ -111,7 +111,7 @@ for(i in seq_along(clinical_trials_list)) {
     dom_nlp <- as.data.frame(dom) %>% 
       unnest(c(7))
 
-    write.csv(dom_nlp, paste0("data/nlp/", names(clinical_trials_list)[i],".csv"))
+    write.csv(dom_nlp, paste0("data/nlp_in/", dom_nlp$anatomic_sites[i], names(clinical_trials_list)[i],".csv"))
 }
 
 
@@ -125,7 +125,7 @@ import pytextrank
 import spacy
 from math import sqrt
 import pandas as pd
-import csv
+
 
 nlp = spacy.load("en_core_web_sm")
 
@@ -143,13 +143,13 @@ def listToString(s):
 
 def run_nlp(doc):
     doc = nlp(doc)
-    with open('data//nlp//output.txt', 'w') as out_file:
+    with open('data//nlp_out//output.txt', 'w') as out_file:
         for p in doc._.phrases:
            print("{:.4f} {:5d}  {}".format(p.rank, p.count, p.text))
            out_file.write("{:.4f} {:5d}  {}".format(p.rank, p.count, p.text))
 
 
-df_1 = pd.read_csv('data//nlp//1.csv', encoding='windows-1252')
+df_1 = pd.read_csv('data//nlp//*.csv', encoding='windows-1252')
 doc1 = df_1.brief_summary.T
 docs1 = listToString(doc1)
 
@@ -171,7 +171,7 @@ corpus = ['Compatibility', 'of', 'systems', 'of', 'linear', 'constraints', 'over
 def run_nlp2(corpus):
     vectorizer = CountVectorizer()
     features = vectorizer.fit_transform(corpus).todense()
-    with open('data//nlp//stage2_output.txt', 'w') as out_file:
+    with open('data//nlp_out//stage2_output.txt', 'w') as out_file:
         for f in features:
              print(euclidean_distances(features[0],f) )
              out_file.write(euclidean_distances(features[0],f)
@@ -183,6 +183,46 @@ run_nlp2(corpus)
 
 
 
+```{python}
+
+import pytextrank
+import spacy
+from math import sqrt
+import pandas as pd
+import glob
+
+path = "data//nlp_out/*.csv"
+
+nlp = spacy.load("en_core_web_sm")
+
+tr = pytextrank.TextRank()
+nlp.add_pipe(tr.PipelineComponent, name="textrank", last=True)
+
+
+def listToString(s):
+    str1 = ""
+    for ele in s:
+        str1 += ele
+
+    return str1
+
+
+def run_nlp(doc,fname):
+    doc = nlp(doc)
+    with open('data//nlp_out//output' + fname + '.txt', 'w') as out_file:
+        for p in doc._.phrases:
+           print("{:.4f} {:5d}  {}".format(p.rank, p.count, p.text))
+           out_file.write("{:.4f} {:5d}  {}".format(p.rank, p.count, p.text))
+
+
+for fname in glob.iglob(path):
+    df_1 = pd.read_csv(fname, encoding='windows-1252')
+    doc1 = df_1.brief_summary.T
+    docs1 = listToString(doc1)
+    run_nlp(docs1)
+
+
+```
 
 
 
