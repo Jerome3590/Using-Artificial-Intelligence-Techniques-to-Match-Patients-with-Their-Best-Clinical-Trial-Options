@@ -1,0 +1,350 @@
+---
+title: "ORNL Data Challenge - Build Deep Learning Dataset"
+author: "Jerome Dixon"
+date: "7/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+
+library(reticulate)
+use_condaenv("ORNL")
+
+```
+
+
+```{r}
+
+library(here)
+library(readxl)
+library(httr)
+library(jsonlite)
+library(dplyr)
+library(magrittr)
+library(aws.s3)
+library(tidyverse)
+library(kableExtra)
+library(purrr)
+library(data.table)
+library(tm)
+
+```
+
+
+```{r AWS ORNL Data Files}
+
+aws_bucket <- "s3://ornl-data-challenge/"
+
+bucket_df <- get_bucket_df(aws_bucket, check_region = F)
+
+bucket_df$Key
+
+#Download AWS files to your local directory
+
+```
+
+
+```{r Local ORNL Data Files}
+
+#Sample Participants
+participants_marked <- read_excel(here("data","participants_data", "Dataset2_Sample_Participant_Data_With_Syn_Columns_Marked.xlsx"))
+
+#Eligibility Criteria
+files_e <- list.files(path = here("data","eligibility_criteria"), pattern = "*.xlsx", full.names = T)
+
+eligibility_rules <- sapply(files_e, read_excel, simplify=FALSE) %>% 
+bind_rows(.id = "id")
+
+#Clinician Matches
+files_c <- list.files(path = here("data","clinician_matches"), pattern = "*.xlsx", full.names = T)
+
+clinician_matches <- sapply(files_c, read_excel, simplify=FALSE) %>% 
+bind_rows(.id = "id")
+
+
+```
+
+
+
+```{r Clinical Trials Data From NCI API}
+
+base_url <- "https://clinicaltrialsapi.cancer.gov/v1/clinical-trials?size=30&include=official_title&include=brief_summary&anatomic_sites"
+
+cancer_sites <- read_csv("data/cancer-sites.csv")
+
+cancer_sites$URL <- paste0(base_url,'=',cancer_sites$`Cancer Sites`,sep="")
+
+URL <- as.data.frame(cancer_sites$URL)
+names(URL) <- "URL"
+
+clinical_trials <- map(URL$URL, ~{
+
+  Sys.sleep(sample(seq(0.5, 2.5, 0.5), 1)) 
+
+  res <- httr::GET(.x)
+
+  httr::content(res, as="text", encoding="UTF-8") %>% 
+    fromJSON(flatten=TRUE) %>% 
+    as_tibble() 
+
+})
+
+
+```
+
+
+```{r Files for NLP Processing}
+
+names(clinical_trials) <- c(1:25)
+
+
+for(i in seq_along(clinical_trials)) {
+   title <- clinical_trials[[i]][["trials"]] 
+   site <- clinical_trials[[i]][["total"]]
+
+   dom_nlp <- cbind(title, site) %>%
+      unnest(cols=c('official_title','brief_summary'))
+
+   write.csv(dom_nlp, paste0("data/nlp/", names(clinical_trials)[i],".csv"))
+}
+
+
+```
+
+
+
+```{python Pytextrank NLP Processing Functions }
+
+import pytextrank
+import spacy
+from math import sqrt
+import pandas as pd
+import glob
+import csv
+
+path =  "data//nlp/*.csv"
+path2 = "data//nlp_final/*.csv"
+
+nlp = spacy.load("en_core_web_sm")
+nlp.max_length = 30030030 
+
+tr = pytextrank.TextRank()
+nlp.add_pipe(tr.PipelineComponent, name="textrank", last=True)
+
+
+def listToString(s):
+    str1 = ""
+    for ele in s:
+        str1 += ele
+
+    return str1
+
+
+def run_nlp_text_summary(path):
+    text_summary_metrics = []
+    for fname in glob.iglob(path):
+        df_1 = pd.read_csv(fname, encoding='windows-1252')
+        doc1 = df_1.brief_summary.T
+        site = df_1.site
+        docs1 = listToString(doc1)
+        doc = nlp(docs1, site)
+        for p in doc._.phrases:
+            #print("{:.4f} {:5d} {} {} ".format(p.rank, p.count, p.text, site))
+            text_summary_metrics.append("{:.4f} {:5d} {} {} ".format(p.rank, p.count, p.text, site))
+    
+    return text_summary_metrics
+    
+    
+def run_nlp_text_summary_no_words(path):
+    text_summary_metrics = []
+    for fname in glob.iglob(path):
+        df_1 = pd.read_csv(fname, encoding='windows-1252')
+        doc1 = df_1.brief_summary.T
+        site = df_1.site
+        docs1 = listToString(doc1)
+        doc = nlp(docs1, site)
+        for p in doc._.phrases:
+            #print("{:.4f} {:5d} {} {} ".format(p.rank, p.count, site))
+            text_summary_metrics.append("{:.4f} {:5d} {} ".format(p.rank, p.count, site))
+    
+    return text_summary_metrics
+    
+
+def run_nlp_trials_title(path):
+    trial_title_metrics = []
+    for fname in glob.iglob(path):
+        df_1 = pd.read_csv(fname, encoding='windows-1252')
+        doc1 = df_1.official_title.T
+        site = df_1.site
+        docs1 = listToString(doc1)
+        doc = nlp(docs1, site)
+        for p in doc._.phrases:
+            #print("{:.4f} {:5d} {} {} ".format(p.rank, p.count, p.text, site))
+            trial_title_metrics.append("{:.4f} {:5d} {} {} ".format(p.rank, p.count, p.text, site))
+    
+    return trial_title_metrics
+    
+def run_nlp_trials_title_no_words(path):
+    trial_title_metrics = []
+    for fname in glob.iglob(path):
+        df_1 = pd.read_csv(fname, encoding='windows-1252')
+        doc1 = df_1.official_title.T
+        site = df_1.site
+        docs1 = listToString(doc1)
+        doc = nlp(docs1, site)
+        for p in doc._.phrases:
+            #print("{:.4f} {:5d} {} {} ".format(p.rank, p.count, site))
+            trial_title_metrics.append("{:.4f} {:5d} {} {} ".format(p.rank, p.count, site))
+    
+    return trial_title_metrics
+    
+    
+def run_nlp_merged_keywords(path2):
+    merged_keywords = []
+    for fname in glob.iglob(path2):
+        df_1 = pd.read_csv(fname, encoding='windows-1252')
+        doc1 = df_1.merged_keywords_all.T
+        target = df_1.target
+        docs1 = listToString(doc1)
+        doc = nlp(docs1, target)
+        for p in doc._.phrases:
+            #print("{:.4f} {:5d} {} {} ".format(p.rank, p.count, p.text, target))
+            merged_keywords.append("{:.4f} {:5d} {} ".format(p.rank, p.count, target))
+    
+    return merged_keywords
+    
+    
+#To call python nlp functions:
+#py$run_nlp_text_summary(py$path)
+#py$run_nlp_trials_title(py$path)
+#py$run_nlp_merged_keywords(py$path2)
+    
+
+```
+
+
+
+```{r Clinical Trials Text Summary Metrics Dataframe}
+
+nlp_summary_metrics <- as.list(py$run_nlp_text_summary(py$path)) %>% 
+  str_split(., " ")
+
+nlp_summary2 <- lapply(nlp_summary_metrics, function(z){ z[!is.na(z) & z != ""]}) 
+
+nlp_summary3 <- t(sapply(nlp_summary2, `length<-`, max(lengths(nlp_summary2))))
+
+nlp_summary4 <- as.data.frame(nlp_summary3)
+
+nlp_summary4$merged_keywords <- paste(nlp_summary4$V3,nlp_summary4$V4,nlp_summary4$V5,nlp_summary4$V6,nlp_summary4$V7,nlp_summary4$V8)
+
+nlp_summary4 %<>% mutate(target = str_split(nlp_summary4$V23, "\\s", simplify = TRUE)[, 1])
+
+nlp_summary_ds <- nlp_summary4 %>%  select(V1, V2, merged_keywords, target)
+
+names(nlp_summary_ds) <- c("similiarity_index", "nodes", "merged_keywords", "target")
+
+nlp_summary_ds$merged_keywords <- removeNumbers(nlp_summary_ds$merged_keywords) 
+
+```
+
+
+```{r Clinical Trials Title NLP Metrics}
+
+nlp_title_metrics <- as.list(py$run_nlp_trials_title(py$path)) %>% 
+  str_split(., " ")
+
+
+nlp_title2 <- lapply(nlp_title_metrics, function(z){ z[!is.na(z) & z != ""]})
+
+nlp_title3 <- t(sapply(nlp_title2, `length<-`, max(lengths(nlp_title2))))
+
+nlp_title4 <- as.data.frame(nlp_title3)
+
+nlp_title4$merged_keywords <- paste(nlp_title4$V3,nlp_title4$V4,nlp_title4$V5,nlp_title4$V6,nlp_title4$V7,nlp_title4$V8)
+
+nlp_title4 %<>% mutate(target = str_split(nlp_title4$V29, "\\s", simplify = TRUE)[, 1])
+
+nlp_titles_ds <- nlp_title4 %>%  select(V1, V2, merged_keywords, target)
+
+names(nlp_titles_ds) <- c("similiarity_index", "nodes", "merged_keywords", "target")
+
+nlp_titles_ds$merged_keywords <- removeNumbers(nlp_titles_ds$merged_keywords) 
+
+
+```
+
+
+```{r}
+
+
+DL_df <- inner_join(nlp_summary_ds, nlp_titles_ds, by= 'target')
+names(DL_df) <- c("similiarity_index.summary", "nodes.summary", "merged_keywords.summary", "target", "similiarity_index.title", "nodes.title", "merged_keywords.title")
+
+DL_df$merged_keywords_all <- paste(DL_df$merged_keywords.summary, DL_df$merged_keywords.title) %>% 
+  gsub("[\r\n]", "",.)
+
+
+write.csv(DL_df, "data/nlp_out/Deep_Learning_Dataset.csv")
+
+
+```
+
+
+```{r}
+
+
+DL_input <- DL_df %>% select(c(4,8)) 
+
+write.csv(DL_input, paste0("data/nlp_out/DL_DF_Addendum.csv"))
+
+
+```
+
+
+
+```{r sample }
+
+DL_df$similiarity_index.summary <- as.numeric(DL_df$similiarity_index.summary)
+
+DL_df$pareto <- ntile(DL_df$similiarity_index.summary, 20)  
+
+
+sample_dl_df <- DL_df %>% filter(pareto == 20 & similiarity_index.summary > 0)
+
+write.csv(sample_dl_df, paste0("data/nlp_final/DL_DF_sample.csv"))
+
+
+
+```
+
+
+
+```{r}
+
+nlp_merged_metrics <- as.list(py$run_nlp_merged_keywords(py$path2)) %>% 
+  str_split(., " ")
+
+
+nlp_merged_metrics2 <- lapply(nlp_merged_metrics, function(z){ z[!is.na(z) & z != ""]})
+
+nlp_merged_metrics3 <- t(sapply(nlp_merged_metrics2, `length<-`, max(lengths(nlp_merged_metrics2))))
+
+nlp_merged_metrics4 <- as.data.frame(nlp_merged_metrics3)
+
+
+nlp_summary_ds <- nlp_merged_metrics4 %>% mutate(target = str_split(nlp_merged_metrics4$V4, "\\s", simplify = TRUE)[, 1])
+
+nlp_summary_ds %<>% select(V1, V2, target)
+
+names(nlp_summary_ds) <- c("similiarity_index", "nodes", "target")
+
+
+```
+
+
+
