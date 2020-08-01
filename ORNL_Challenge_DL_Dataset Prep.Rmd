@@ -71,9 +71,62 @@ bind_rows(.id = "id")
 
 
 
+```{r Test Files}
+
+test_data_titles <- clinician_matches[2,c(3:51)] %>% t()
+test_data_titles %<>% as.data.frame() %>% unique()
+rownames(test_data_titles) <- c()
+test_data_titles = test_data_titles[-1,]
+test_data_titles %<>% as.list()
+
+test_data_nct <- clinician_matches[1,c(3:51)] %>% t()
+test_data_nct %<>% as.data.frame() %>% unique()
+rownames(test_data_nct) <- c()
+test_data_nct = test_data_nct[-1,]
+test_data_nct %<>% as.list()
+
+
+write.csv(test_data_nct, "data/test_trial_ids.csv")
+
+```
+
+
+```{r Test Files API Data}
+
+### This does not work. Test data appears to be made up IDs. Will subset our own..
+
+trial_ids <- as.data.frame(test_data_nct) %>% t()
+
+row.names(trial_ids) <- c(1:length(trial_ids))
+trial_ids$trial_id <- trial_ids[,1]
+
+
+base_url <- "https://clinicaltrialsapi.cancer.gov/v1/clinical-trial/"
+
+trial_ids$URL <- paste0(base_url,trial_ids$trial_id, sep="")
+
+URL <- as.data.frame(trial_ids$URL)
+names(URL) <- "URL"
+
+test_data_targets <- map(trial_ids$URL, ~{
+
+  Sys.sleep(sample(seq(0.5, 2.5, 0.5), 1)) 
+
+  res <- httr::GET(.x)
+
+  httr::content(res, as="text", encoding="UTF-8") %>% 
+    fromJSON(flatten=TRUE) 
+
+})
+
+
+```
+
+
+
 ```{r Clinical Trials Data From NCI API}
 
-base_url <- "https://clinicaltrialsapi.cancer.gov/v1/clinical-trials?size=30&include=official_title&include=brief_summary&anatomic_sites"
+base_url <- "https://clinicaltrialsapi.cancer.gov/v1/clinical-trials?size=10&include=official_title&include=brief_summary&anatomic_sites"
 
 cancer_sites <- read_csv("data/cancer-sites.csv")
 
@@ -128,7 +181,7 @@ import glob
 import csv
 
 path =  "data//nlp/*.csv"
-path2 = "data//nlp_final/*.csv"
+path2 = "data//nlp_out/*.csv"
 
 nlp = spacy.load("en_core_web_sm")
 nlp.max_length = 30030030 
@@ -160,20 +213,6 @@ def run_nlp_text_summary(path):
     return text_summary_metrics
     
     
-def run_nlp_text_summary_no_words(path):
-    text_summary_metrics = []
-    for fname in glob.iglob(path):
-        df_1 = pd.read_csv(fname, encoding='windows-1252')
-        doc1 = df_1.brief_summary.T
-        site = df_1.site
-        docs1 = listToString(doc1)
-        doc = nlp(docs1, site)
-        for p in doc._.phrases:
-            #print("{:.4f} {:5d} {} {} ".format(p.rank, p.count, site))
-            text_summary_metrics.append("{:.4f} {:5d} {} ".format(p.rank, p.count, site))
-    
-    return text_summary_metrics
-    
 
 def run_nlp_trials_title(path):
     trial_title_metrics = []
@@ -189,19 +228,6 @@ def run_nlp_trials_title(path):
     
     return trial_title_metrics
     
-def run_nlp_trials_title_no_words(path):
-    trial_title_metrics = []
-    for fname in glob.iglob(path):
-        df_1 = pd.read_csv(fname, encoding='windows-1252')
-        doc1 = df_1.official_title.T
-        site = df_1.site
-        docs1 = listToString(doc1)
-        doc = nlp(docs1, site)
-        for p in doc._.phrases:
-            #print("{:.4f} {:5d} {} {} ".format(p.rank, p.count, site))
-            trial_title_metrics.append("{:.4f} {:5d} {} {} ".format(p.rank, p.count, site))
-    
-    return trial_title_metrics
     
     
 def run_nlp_merged_keywords(path2):
@@ -250,6 +276,8 @@ names(nlp_summary_ds) <- c("similiarity_index", "nodes", "merged_keywords", "tar
 
 nlp_summary_ds$merged_keywords <- removeNumbers(nlp_summary_ds$merged_keywords) 
 
+
+
 ```
 
 
@@ -276,6 +304,8 @@ names(nlp_titles_ds) <- c("similiarity_index", "nodes", "merged_keywords", "targ
 nlp_titles_ds$merged_keywords <- removeNumbers(nlp_titles_ds$merged_keywords) 
 
 
+
+
 ```
 
 
@@ -289,7 +319,7 @@ DL_df$merged_keywords_all <- paste(DL_df$merged_keywords.summary, DL_df$merged_k
   gsub("[\r\n]", "",.)
 
 
-write.csv(DL_df, "data/nlp_out/Deep_Learning_Dataset.csv")
+write.csv(DL_df, "data/nlp_final/Deep_Learning_Dataset.csv")
 
 
 ```
@@ -300,7 +330,7 @@ write.csv(DL_df, "data/nlp_out/Deep_Learning_Dataset.csv")
 
 DL_input <- DL_df %>% select(c(4,8)) 
 
-write.csv(DL_input, paste0("data/nlp_out/DL_DF_Addendum.csv"))
+write.csv(DL_input, paste0("data/nlp_final/DL_DF_Addendum.csv"))
 
 
 ```
@@ -309,6 +339,7 @@ write.csv(DL_input, paste0("data/nlp_out/DL_DF_Addendum.csv"))
 
 ```{r sample }
 
+
 DL_df$similiarity_index.summary <- as.numeric(DL_df$similiarity_index.summary)
 
 DL_df$pareto <- ntile(DL_df$similiarity_index.summary, 20)  
@@ -316,7 +347,7 @@ DL_df$pareto <- ntile(DL_df$similiarity_index.summary, 20)
 
 sample_dl_df <- DL_df %>% filter(pareto == 20 & similiarity_index.summary > 0)
 
-write.csv(sample_dl_df, paste0("data/nlp_final/DL_DF_sample.csv"))
+write.csv(sample_dl_df, paste0("data/nlp_out/DL_DF_sample.csv"))
 
 
 
@@ -325,6 +356,7 @@ write.csv(sample_dl_df, paste0("data/nlp_final/DL_DF_sample.csv"))
 
 
 ```{r}
+
 
 nlp_merged_metrics <- as.list(py$run_nlp_merged_keywords(py$path2)) %>% 
   str_split(., " ")
@@ -343,8 +375,84 @@ nlp_summary_ds %<>% select(V1, V2, target)
 
 names(nlp_summary_ds) <- c("similiarity_index", "nodes", "target")
 
+write.csv(nlp_summary_ds, paste0("data/nlp_final/DL_DF_merged_sample.csv"))
+
+
 
 ```
 
 
+```{python Final Tidy Dataframe}
+
+import pytextrank
+import spacy
+from math import sqrt
+import pandas as pd
+import glob
+import csv
+
+path =  "data//nlp/*.csv"
+path2 = "data//nlp_out/*.csv"
+
+nlp = spacy.load("en_core_web_sm")
+nlp.max_length = 30030030 
+
+tr = pytextrank.TextRank()
+nlp.add_pipe(tr.PipelineComponent, name="textrank", last=True)
+
+
+def listToString(s):
+    str1 = ""
+    for ele in s:
+        str1 += ele
+
+    return str1
+    
+    
+def run_nlp_text_summary_no_words(path):
+    text_summary_metrics = []
+    for fname in glob.iglob(path):
+        df_1 = pd.read_csv(fname, encoding='windows-1252')
+        doc1 = df_1.brief_summary.T
+        site = df_1.site
+        docs1 = listToString(doc1)
+        doc = nlp(docs1, site)
+        for p in doc._.phrases:
+            #print("{:.4f} {:5d} {} {} ".format(p.rank, p.count, site))
+            text_summary_metrics.append("{:.4f} {:5d} {} ".format(p.rank, p.count, site))
+    
+    return text_summary_metrics
+    
+    
+def run_nlp_trials_title_no_words(path):
+    trial_title_metrics = []
+    for fname in glob.iglob(path):
+        df_1 = pd.read_csv(fname, encoding='windows-1252')
+        doc1 = df_1.official_title.T
+        site = df_1.site
+        docs1 = listToString(doc1)
+        doc = nlp(docs1, site)
+        for p in doc._.phrases:
+            #print("{:.4f} {:5d} {} {} ".format(p.rank, p.count, site))
+            trial_title_metrics.append("{:.4f} {:5d} {} {} ".format(p.rank, p.count, site))
+    
+    return trial_title_metrics
+    
+    
+def run_nlp_merged_keywords(path2):
+    merged_keywords = []
+    for fname in glob.iglob(path2):
+        df_1 = pd.read_csv(fname, encoding='windows-1252')
+        doc1 = df_1.merged_keywords_all.T
+        target = df_1.target
+        docs1 = listToString(doc1)
+        doc = nlp(docs1, target)
+        for p in doc._.phrases:
+            #print("{:.4f} {:5d} {} {} ".format(p.rank, p.count, p.text, target))
+            merged_keywords.append("{:.4f} {:5d} {} ".format(p.rank, p.count, target))
+    
+    return merged_keywords
+
+
+```
 
