@@ -1,0 +1,317 @@
+---
+title: "ORNL Data Challenge - Build NLP Deep Learning Dataset"
+author: "Jerome Dixon"
+date: "7/7/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+
+library(reticulate)
+use_condaenv("ORNL")
+
+```
+
+
+```{r}
+
+library(here)
+library(readxl)
+library(httr)
+library(jsonlite)
+library(dplyr)
+library(tidyr)
+library(magrittr)
+library(aws.s3)
+library(tidyverse)
+library(kableExtra)
+library(purrr)
+library(data.table)
+library(tm)
+library(caret)
+library(keras)
+
+```
+
+
+```{r Clinical Trials Data From NCI API}
+
+#Selecting 15 (?size=15) Clinical Trials per cancer site. We will train with 12 clinical trials per site. Use 3 clinical trials per site for testing.
+base_url <- "https://clinicaltrialsapi.cancer.gov/v1/clinical-trials?size=15&include=official_title&include=brief_summary&anatomic_sites"
+
+cancer_sites <- read_csv("data/cancer-sites.csv")
+
+cancer_sites$URL <- paste0(base_url,'=',cancer_sites$`Cancer Sites`,sep="")
+
+URL <- as.data.frame(cancer_sites$URL)
+names(URL) <- "URL"
+
+clinical_trials <- map(URL$URL, ~{
+
+  Sys.sleep(sample(seq(0.5, 2.5, 0.5), 1)) 
+
+  res <- httr::GET(.x)
+
+  httr::content(res, as="text", encoding="UTF-8") %>% 
+    fromJSON(flatten=TRUE) %>% 
+    as_tibble() 
+
+})
+
+
+```
+
+
+```{r Create Train and Test Data Sets}
+
+
+names(clinical_trials) <- c(1:25)
+
+dat <- data.frame()
+
+for(i in seq_along(clinical_trials)) {
+   title <- clinical_trials[[i]][["trials"]] 
+   site <- clinical_trials[[i]][["total"]]
+
+   dom_nlp <- cbind(title, site) %>%
+      unnest(cols=c('official_title','brief_summary', 'site'))
+
+   dat <- rbind(dat, dom_nlp)
+   
+}
+
+dat$site <- as.factor(dat$site)
+
+names(dat) <- c('official_title','brief_summary','total')
+
+
+set.seed(1997)
+
+trainIndex <- createDataPartition(dat$total, p = .85, list = FALSE, times = 1)
+
+clinical_trials_train <- dat[ trainIndex,]
+clinical_trials_test  <- dat[-trainIndex,]
+
+clinical_trials_train %<>% group_by(total)
+test_df <-  split(clinical_trials_train, clinical_trials_train$total)
+
+clncl_train <- as.list(x=test_df)
+names(clncl_train) <- c(1:25)
+
+
+```
+
+
+```{r Create Files for NLP Processing}
+
+
+for(i in seq_along(clncl_train)) {
+   title <- clncl_train[[i]][["official_title"]] 
+   summary <- clncl_train[[i]][["brief_summary"]] 
+   target_site <- as.character(clncl_train[[i]][["total"]])
+
+   dom_nlp <- cbind(title, summary, target_site)
+
+   write.csv(dom_nlp, paste0("data/nlp_stage1/", names(clncl_train)[i],".csv"))
+}
+
+
+```
+
+
+```{python Pytextrank NLP Corpus}
+
+import pytextrank
+import spacy
+import pandas as pd
+import glob
+
+path = "data//nlp_stage1/*.csv"
+
+nlp = spacy.load("en_core_web_sm")
+
+tr = pytextrank.TextRank()
+nlp.add_pipe(tr.PipelineComponent, name="textrank", last=True)
+
+
+def listToString(s):
+    str1 = ""
+    for ele in s:
+        str1 += ele
+
+    return str1
+
+
+def getTarget(doc):
+    for index, row in doc.iterrows():
+        target_site = str(row['target_site'])
+
+    return target_site
+
+
+def run_nlp_summaries(path):
+
+    eigencentrality = []
+    counts = []
+    key_words = []
+    targets = []
+
+    for fname in glob.iglob(path):
+        df_1 = pd.read_csv(fname, encoding='windows-1252')
+
+        # Parse Fields
+        doc1 = df_1.summary.T
+        doc2 = pd.DataFrame(df_1.target_site.T)
+
+        # Convert elements to strings
+        docs1 = listToString(doc1)
+        target_site = getTarget(doc2)
+
+        # NLP metrics: Summary
+        doc_summary = nlp(docs1)
+        for p in doc_summary._.phrases:
+            eigencentrality.append("{:.4f}".format(p.rank))
+            counts.append("{:5d}".format(p.count))
+            key_words.append("{}".format(p.text))
+            targets.append("{}".format(target_site))
+
+        # Combine indiviudal NLP metrics into one dataframe
+        nlp_eigencentrality = pd.DataFrame({'eigencentrality': eigencentrality})
+        nlp_counts = pd.DataFrame({'counts': counts})
+        nlp_key_words = pd.DataFrame({'key_words': key_words})
+        nlp_target_sites = pd.DataFrame({'target_site': targets})
+
+        nlp_summaries = pd.concat([nlp_eigencentrality, nlp_counts, nlp_key_words, nlp_target_sites],
+                                   ignore_index=True,
+                                axis=1)
+
+    print(nlp_summaries)
+    return nlp_summaries
+    
+
+```
+
+
+```{r NLP Summaries Corpus}
+
+path = "data//nlp_stage1/*.csv"
+
+nlp_summary_metrics <- py$run_nlp_summaries(path)
+
+names(nlp_summary_metrics) <- c("eigencentrality","count","key_words","target_site")
+
+write.csv(nlp_summary_metrics, "data/nlp_stage2/summaries.csv")
+
+
+```
+
+
+```{python NLP Corpus Adjusted}
+
+import pytextrank
+import spacy
+import pandas as pd
+import glob
+
+path = "data//nlp/*.csv"
+
+nlp = spacy.load("en_core_web_sm")
+
+tr = pytextrank.TextRank()
+nlp.add_pipe(tr.PipelineComponent, name="textrank", last=True)
+
+
+def listToString(s):
+    str1 = ""
+    for ele in s:
+        str1 += ele
+
+    return str1
+
+
+def getTarget(doc):
+    for index, row in doc.iterrows():
+        target_site = str(row['target_site'])
+
+    return target_site
+
+
+def run_nlp_updated(path):
+
+    eigencentrality = []
+    counts = []
+    key_words = []
+    targets = []
+
+    for fname in glob.iglob(path):
+        df_1 = pd.read_csv(fname, encoding='windows-1252')
+
+        # Parse Fields
+        doc1 = df_1.title.T
+        doc2 = df_1.summary.T
+        doc3 = doc1 + doc2
+        doc4 = pd.DataFrame(df_1.target_site.T)
+
+        target_site = getTarget(doc4)
+
+        # Convert elements to strings
+        docs1 = listToString(doc1)
+        docs2 = listToString(doc2)
+        docs3 = listToString(doc3)
+        target_site = getTarget(doc4)
+
+        # NLP metrics: Summary
+        doc_summary = nlp(docs3)
+        for p in doc_summary._.phrases:
+            eigencentrality.append("{:.4f}".format(p.rank))
+            counts.append("{:5d}".format(p.count))
+            key_words.append("{}".format(p.text))
+            targets.append("{}".format(target_site))
+
+        # Combine indiviudal NLP metrics into one dataframe
+        nlp_eigencentrality = pd.DataFrame({'eigencentrality_new': eigencentrality})
+        nlp_counts = pd.DataFrame({'counts_new': counts})
+        nlp_key_words = pd.DataFrame({'key_words_new': key_words})
+        nlp_target_sites = pd.DataFrame({'target_site': targets})
+
+        nlp_updated = pd.concat([nlp_eigencentrality, nlp_counts, nlp_key_words, nlp_target_sites],
+                                   ignore_index=True,
+                                axis=1)
+
+    print(nlp_updated)
+    return nlp_updated
+
+
+```
+
+
+```{r NLP Corpus Adjusted With Clinical Trial Titles}
+
+path = "data//nlp_stage1/*.csv"
+
+nlp_corpus_updated <- py$run_nlp_updated(path)
+
+names(nlp_corpus_updated) <- c("eigencentrality_adjusted","count_adjusted","key_words_adjusted","target_site")
+
+write.csv(nlp_corpus_updated, "data/nlp_stage2/nlp_corpus_adjusted.csv")
+
+
+```
+
+
+```{r Final Deep Learning Dataset}
+
+DL_df <- nlp_summary_metrics %>% left_join(nlp_corpus_updated, by="target_site")
+
+DL_df_final <- DL_df %>% select(1,2,5,6,4)
+
+write.csv(DL_df_final, "data/nlp_stage3/final_DL_df.csv")
+
+
+```
+
