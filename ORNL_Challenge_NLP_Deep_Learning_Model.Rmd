@@ -1,5 +1,5 @@
 ---
-title: "ORNL Deep Learning NLP Model for Data Science Challenge"
+title: "ORNL Deep Learning Model for Data Science Challenge"
 author: "Jerome Dixon"
 date: "8/7/2020"
 output: html_document
@@ -59,10 +59,10 @@ final_DL_df$target_site <- as.factor(final_DL_df$target_site)
 final_DL_df$pareto <- ntile(final_DL_df$eigencentrality, 40)  
 
 
-sample_dl_df <- final_DL_df %>% filter(pareto == 1 & eigencentrality > 0)
+sample_dl_df <- final_DL_df %>% filter(pareto == 1 & eigencentrality > 0 & eigencentrality_adjusted)
 
 
-dl_dataset <- select(sample_dl_df, 1:5)
+dl_dataset <- select(sample_dl_df, 1,3,5)
 
 
 ```
@@ -75,8 +75,7 @@ nlp_data <- as.matrix(dl_dataset)
 
 dimnames(nlp_data) <- NULL
 
-nlp_data[,1:5] <- as.numeric(nlp_data[,1:5])
-
+nlp_data[,3] <- as.numeric(nlp_data[,3]) - 1
 
 ```
 
@@ -85,39 +84,32 @@ nlp_data[,1:5] <- as.numeric(nlp_data[,1:5])
 
 set.seed(1997)
 
-indx <- sample(2,
-                nrow(nlp_data),
-                replace = TRUE,
-                prob = c(0.9, 0.1))
+indx <- sample(2, nrow(nlp_data), replace = TRUE, prob = c(0.8, 0.2))
 
 
-x_train <- nlp_data[indx == 1, 1:4]
-x_test <- nlp_data[indx == 2, 1:4]
+train <- nlp_data[indx==1, 1:2]
+test <- nlp_data[indx==2, 1:2]
 
-y_test_actual <- nlp_data[indx == 2, 5]
-
-
-y_train <- to_categorical(nlp_data[indx == 1, 5])
-y_test <- to_categorical(nlp_data[indx == 2, 5])
+train_target <- nlp_data[indx==1, 3]
+test_target  <- nlp_data[indx==2, 3]
 
 
 ```
 
 
+```{r One Hot Encoding}
 
+train_labels <- to_categorical(train_target)
+test_labels <- to_categorical(test_target)
 
-```{r}
-
-cbind(y_test_actual[1:4],
-      y_test[1:4, ])
+print(test_labels[1:10,])
 
 
 ```
-
-
 
 
 ```{r Scale Features}
+
 
 mean_train <- apply(x_train, 2, mean)
 
@@ -137,12 +129,12 @@ x_test <- scale(x_test, center = mean_train, scale = std_train)
 
 model <- keras_model_sequential()
 model %>% 
-  layer_dense(units = 4,
+  layer_dense(units = 3,
               kernel_regularizer = regularizer_l2(0.001),
               activation = "relu",
-              input_shape = c(4)) %>% 
-  layer_dropout(rate = 0.2) %>% 
-  layer_dense(units = 4,
+              input_shape = c(2)) %>% 
+  layer_dropout(rate = 0.1) %>% 
+  layer_dense(units = 50,
               kernel_regularizer = regularizer_l2(0.001),
               activation = "relu") %>% 
   layer_dense(units = 25,
@@ -172,8 +164,8 @@ model %>% compile(loss = "categorical_crossentropy",
 history <- model %>% 
   fit(x_train,
       y_train,
-      epoch = 10,
-      batch_size = 128,
+      epoch = 25,
+      batch_size = 32,
       validation_split = 0.1,
       verbose= 2)
 
@@ -213,4 +205,16 @@ table(Predicted = pred,
 
 ```
 
+
+```{r}
+
+prob <- model %>% 
+  predict_proba(x_test)
+cbind(prob,
+      pred,
+      y_test_actual)
+
+
+
+```
 
