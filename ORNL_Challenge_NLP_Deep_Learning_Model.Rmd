@@ -31,8 +31,10 @@ library(tidyverse)
 library(kableExtra)
 library(purrr)
 library(data.table)
-library(tm)
+library(rsample)
 library(caret)
+library(recipes)
+library(mltools)
 library(keras)
 
 ```
@@ -43,55 +45,55 @@ library(keras)
 
 final_DL_df <- read_csv("data/nlp_stage3/final_DL_df.csv")
 
-final_DL_df %<>% select(2:6)
+final_DL_df %<>% select(2:4)
 
-
-```
-
-
-
-```{r Shrink Dataset}
-
-final_DL_df$eigencentrality <- as.numeric(final_DL_df$eigencentrality)
 final_DL_df$target_site <- as.factor(final_DL_df$target_site)
 
 
-final_DL_df$pareto <- ntile(final_DL_df$eigencentrality, 40)  
-
-
-sample_dl_df <- final_DL_df %>% filter(pareto == 1 & eigencentrality > 0 & eigencentrality_adjusted >0)
-
-
-dl_dataset <- select(sample_dl_df, 1:5)
-
-
 ```
 
 
 
-```{r Transform to Matrix}
+```{r Training datasets}
 
-nlp_data <- as.matrix(dl_dataset)
-
-dimnames(nlp_data) <- NULL
-
-nlp_data[,5] <- as.numeric(nlp_data[,5]) - 1
-
-```
-
-
-```{r Test and Training Splits}
-
+# Split test/training sets
 set.seed(1997)
 
-indx <- sample(2, nrow(nlp_data), replace = TRUE, prob = c(0.8, 0.2))
+train_test_split <- initial_split(final_DL_df, prop = 0.8)
+
+# Retrieve train and test sets
+train_tbl <- training(train_test_split)
+test_tbl  <- testing(train_test_split)
 
 
-train <- nlp_data[indx==1, 1:4]
-test <- nlp_data[indx==2, 1:4]
+```
 
-train_target <- nlp_data[indx==1, 5]
-test_target  <- nlp_data[indx==2, 5]
+
+```{r}
+
+# Create recipe
+rec_obj <- recipe(target_site ~ ., data = train_tbl) %>%
+  step_log(eigencentrality) %>%
+  step_log(eigencentrality_adjusted) %>% 
+  step_dummy(all_nominal(), -all_outcomes()) %>%
+  step_center(all_predictors(), -all_outcomes()) %>%
+  step_scale(all_predictors(), -all_outcomes()) %>%
+  prep(data = train_tbl)
+
+
+
+
+```
+
+
+
+```{r Model Data Prep}
+
+# Predictors
+x_train_tbl <- bake(rec_obj, new_data = train_tbl) %>% select(-target_site)
+x_test_tbl  <- bake(rec_obj, new_data = test_tbl) %>% select(-target_site)
+
+glimpse(x_train_tbl)
 
 
 ```
@@ -99,28 +101,16 @@ test_target  <- nlp_data[indx==2, 5]
 
 ```{r One Hot Encoding}
 
-train_labels <- to_categorical(train_target)
-test_labels <- to_categorical(test_target)
+# Predictors
+y_train_target <- bake(rec_obj, new_data = train_tbl) %>% select(target_site)
+y_test_target  <- bake(rec_obj, new_data = test_tbl) %>% select(target_site)
 
-print(test_labels[1:10,])
-
-
-```
-
-
-```{r Scale Features}
-
-
-mean_train <- apply(x_train, 2, mean)
-
-std_train <- apply(x_train, 2, sd)
-
-x_train <- scale(x_train, center = mean_train, scale = std_train)
-
-x_test <- scale(x_test, center = mean_train, scale = std_train)
+train_one_hot <- as.vector(one_hot(as.data.table(y_train_target)))
+test_one_hot <- as.vector(one_hot(as.data.table(y_train_target)))
 
 
 ```
+
 
 
 ```{r}
@@ -129,10 +119,10 @@ x_test <- scale(x_test, center = mean_train, scale = std_train)
 
 model <- keras_model_sequential()
 model %>% 
-  layer_dense(units = 4,
+  layer_dense(units = 2,
               kernel_regularizer = regularizer_l2(0.001),
               activation = "relu",
-              input_shape = c(4)) %>% 
+              input_shape = c(2)) %>% 
   layer_dropout(rate = 0.2) %>% 
   layer_dense(units = 50,
               kernel_regularizer = regularizer_l2(0.001),
@@ -162,8 +152,8 @@ model %>% compile(loss = "categorical_crossentropy",
 
 
 history <- model %>% 
-  fit(x_train,
-      y_train,
+  fit(as.matrix(x_train_tbl),
+      as.matrix(train_one_hot),
       epoch = 10,
       batch_size = 1,
       validation_split = 0.2,
@@ -183,8 +173,8 @@ plot(history)
 ```{r}
 
 model %>% 
-  evaluate(x_test,
-           y_test)
+  evaluate(x_test_tbl,
+           test_one_hot)
 
 
 ```

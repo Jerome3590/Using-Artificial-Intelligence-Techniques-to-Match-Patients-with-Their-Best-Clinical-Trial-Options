@@ -211,6 +211,25 @@ write.csv(nlp_summary_metrics, "data/nlp_stage2/summaries.csv")
 ```
 
 
+
+```{r}
+
+nlp_summary_metrics$target_site  <- as.factor(nlp_summary_metrics$target_site)
+
+nlp_summary_metrics$eigencentrality  <- as.numeric(nlp_summary_metrics$eigencentrality)
+
+nlp_summary_metrics$count  <- as.numeric(nlp_summary_metrics$count)
+
+train <- nlp_summary_metrics %>% group_by(target_site) %>% slice_max(order_by = eigencentrality, n = 100)
+
+
+```
+
+
+
+
+
+
 ```{python NLP Corpus Adjusted}
 
 import pytextrank
@@ -303,12 +322,27 @@ write.csv(nlp_corpus_updated, "data/nlp_stage2/nlp_corpus_adjusted.csv")
 
 ```
 
+```{r}
+
+nlp_corpus_updated$target_site  <- as.factor(nlp_corpus_updated$target_site)
+
+nlp_corpus_updated$eigencentrality_adjusted  <- as.numeric(nlp_corpus_updated$eigencentrality_adjusted)
+
+nlp_corpus_updated$count  <- as.numeric(nlp_corpus_updated$count)
+
+train2 <- nlp_corpus_updated %>% group_by(target_site) %>% slice_max(order_by = eigencentrality_adjusted, n = 100)
+
+
+```
+
+
+
 
 ```{r Final Deep Learning Dataset}
 
-DL_df <- nlp_summary_metrics %>% left_join(nlp_corpus_updated, by="target_site")
+DL_df <- train %>% left_join(train2, by="target_site")
 
-DL_df_final <- DL_df %>% select(1,2,5,6,4)
+DL_df_final <- DL_df %>% select(1,5,4)
 
 write.csv(DL_df_final, "data/nlp_stage3/final_DL_df.csv")
 
